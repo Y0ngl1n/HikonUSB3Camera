@@ -1,8 +1,8 @@
 #include "mycamera.h"
 
 MV_CC_DEVICE_INFO_LIST m_stDevList;//设备信息列表结构体变量，用来存储设备列表
-MV_CC_DEVICE_INFO *m_Device = NULL; //设备对象
-
+MV_CC_DEVICE_INFO *m_Device = NULL; //设备对象1
+MV_CC_DEVICE_INFO *m_Device2 = NULL; //设备对象2
 Mycamera *Mycamera::mycamera1 = nullptr;
 
 Mycamera::Mycamera(QObject *parent):QObject(parent)
@@ -10,6 +10,7 @@ Mycamera::Mycamera(QObject *parent):QObject(parent)
     mycamera1=this;
     connect(this,&Mycamera::sigSendImageStatic,this,&Mycamera::slotSendImageStatic);//关联内部信号和槽
     m_hDevhandle=NULL;
+    m_hDevhandle2=NULL;
 }
 
 Mycamera::~Mycamera()
@@ -18,6 +19,11 @@ Mycamera::~Mycamera()
     {
         MV_CC_DestroyHandle(m_hDevhandle);
         m_hDevhandle=NULL;
+    }
+    if(m_hDevhandle2)
+    {
+        MV_CC_DestroyHandle(m_hDevhandle2);
+        m_hDevhandle2=NULL;
     }
 }
 
@@ -33,110 +39,105 @@ int Mycamera::EnumDevices(MV_CC_DEVICE_INFO_LIST *pstDevList)
 }
 
 //连接相机
-int Mycamera::connectCamera(string id)
+int Mycamera::connectCamera(int id)
 {
-    int temp=EnumDevices(&m_stDevList);
-    //设备更新成功接收命令的返回值为0，返回值不为0则为异常
-    if(temp!=0)
+    if(id==0)
     {
-        return -1;
-    }
-    //未找到任何相机
-    if(m_stDevList.nDeviceNum==0)
-    {
-        return 2;
-    }
-    for(unsigned int i=0;i<m_stDevList.nDeviceNum;i++)
-    {
-        MV_CC_DEVICE_INFO* pDeviceInfo = m_stDevList.pDeviceInfo[i];
-        if(NULL==pDeviceInfo){
-            continue;
-        }
-        if(id== (char*)pDeviceInfo->SpecialInfo.stUsb3VInfo.chUserDefinedName||id== (char*)pDeviceInfo->SpecialInfo.stUsb3VInfo.chSerialNumber)
+        int temp=EnumDevices(&m_stDevList);
+        if(temp!=0)
         {
-            m_Device= m_stDevList.pDeviceInfo[i];
-            break;
-        }else
+            return -1;
+        }
+        MV_CC_DEVICE_INFO* pDeviceInfo = m_stDevList.pDeviceInfo[0];
+        m_Device= m_stDevList.pDeviceInfo[0];
+        //绑定相机句柄
+        temp=MV_CC_CreateHandle(&m_hDevhandle,m_Device);
+        //打开相机设备
+        temp=MV_CC_OpenDevice(m_hDevhandle);
+        if(temp!=0)
         {
-            continue;
+            MV_CC_DestroyHandle(m_hDevhandle);
+            m_hDevhandle=NULL;
+            return -1;
+        }
+        else
+        {
+            setTriggerMode(1,0);
+            return 0;
         }
     }
-    if(m_Device==NULL)
+
+    else if(id==1)
     {
-        //未找到指定名称的相机
-        qDebug()<<"未找到指定名称的相机";
-        return 3;
-    }
-    temp=MV_CC_CreateHandle(&m_hDevhandle,m_Device);
-    if(temp!=0)
-    {
-        return -1;
-    }
-    temp=MV_CC_OpenDevice(m_hDevhandle);
-    if(temp!=0)
-    {
-        MV_CC_DestroyHandle(m_hDevhandle);
-        m_hDevhandle=NULL;
-        return -1;
-    }
-    else
-    {
-        setTriggerMode(1);
-        return 0;
-    }
-    if(m_Device->nTLayerType==MV_GIGE_DEVICE)
-    {
-        std::cout<<"Gige Camera"<<std::endl;
+        int temp=EnumDevices(&m_stDevList);
+        m_Device2= m_stDevList.pDeviceInfo[2];
+        //绑定相机句柄
+        temp=MV_CC_CreateHandle(&m_hDevhandle2,m_Device2);
+        //打开相机设备
+        temp=MV_CC_OpenDevice(m_hDevhandle2);
+        if(temp!=0)
+        {
+            MV_CC_DestroyHandle(m_hDevhandle2);
+            m_hDevhandle2=NULL;
+            return -1;
+        }
+        else
+        {
+            setTriggerMode(1,1);
+            return 0;
+        }
     }
 }
-//设置相机触发模式
-int Mycamera::setTriggerMode(unsigned int TriggerModeNum)
-{
-    int nRet=MV_CC_SetTriggerMode(m_hDevhandle,TriggerModeNum);
-    if(MV_OK!=nRet)
-    {
-        return -1;
-    }
-    return 0;
-}
+
 //启动相机采集
-int Mycamera::startCamera()
+int Mycamera::startCamera(int id)
 {
-    int temp=MV_CC_StartGrabbing(m_hDevhandle);
-    if(temp!=0)
+    if(id==0)
     {
-        qDebug()<<"MV_CC_StartGrabing Failed";
-        return -1;
+        int temp=MV_CC_StartGrabbing(m_hDevhandle);
+        if(temp!=0)
+        {
+            qDebug()<<"MV_CC_StartGrabing失败";
+            return -1;
+        }
+        else
+        {
+            qDebug()<<"MV_CC_StartGrabing成功";
+            return 0;
+        }
     }
-    else
+    else if(id==1)
     {
-        qDebug()<<"MV_CC_StartGrabing";
-        return 0;
+        int temp=MV_CC_StartGrabbing(m_hDevhandle2);
+        if(temp!=0)
+        {
+            qDebug()<<"MV_CC_StartGrabing失败";
+            return -1;
+        }
+        else
+        {
+            qDebug()<<"MV_CC_StartGrabing成功";
+            return 0;
+        }
     }
 }
 //相机的图像采集模式分为内触发模式与外触发模式。其中内触发模式包含连续采集、单帧采集两种形式；外触发模式包含软件触发、硬件外触发。
 //外触发：软触发
-int Mycamera::softTrigger()
+int Mycamera::softTrigger(int id)
 {
-    int enumValue=MV_CC_SetEnumValue(m_hDevhandle,"TriggerSource",MV_TRIGGER_SOURCE_SOFTWARE);
-    if(enumValue!=0)
+    if(id==0)
     {
-        qDebug()<<"设置软触发失败";
-        return -1;
+        int enumValue=MV_CC_SetEnumValue(m_hDevhandle,"TriggerMode",MV_TRIGGER_MODE_ON);
+        enumValue=MV_CC_SetEnumValue(m_hDevhandle,"TriggerSource",MV_TRIGGER_SOURCE_SOFTWARE);
+        enumValue=MV_CC_SetCommandValue(m_hDevhandle,"TriggerSoftware");
+        return enumValue;
     }
-    else
+    else if(id==1)
     {
-        qDebug()<<"设置软触发";
-    }
-    int comdValue=MV_CC_SetCommandValue(m_hDevhandle,"TriggerSoftware");
-    if(comdValue!=0)
-    {
-        qDebug() << "软触发失败";
-        return -1;
-    }else
-    {
-        qDebug() << "软触发一次";
-        return 0;
+        int enumValue=MV_CC_SetEnumValue(m_hDevhandle2,"TriggerMode",MV_TRIGGER_MODE_ON);
+        enumValue=MV_CC_SetEnumValue(m_hDevhandle2,"TriggerSource",MV_TRIGGER_SOURCE_SOFTWARE);
+        enumValue=MV_CC_SetCommandValue(m_hDevhandle2,"TriggerSoftware");
+        return enumValue;
     }
 }
 
@@ -231,27 +232,81 @@ int Mycamera::setHeartBeatTime(unsigned int time)
     }
 }
 
-int Mycamera::setExposureTime(float ExposureTimeNum)
+int Mycamera::setExposureTime(float ExposureTimeNum,int id)
 {
-    int temp= MV_CC_SetFloatValue(m_hDevhandle, "ExposureTime",ExposureTimeNum );
-    if(temp!=0)
-        return -1;
-    return 0;
+    if(id==0)
+    {
+        int temp= MV_CC_SetFloatValue(m_hDevhandle, "ExposureTime",ExposureTimeNum );
+        if(temp!=0)
+            return -1;
+        return 0;
+    }
+    else if(id==1)
+    {
+        int temp= MV_CC_SetFloatValue(m_hDevhandle2, "ExposureTime",ExposureTimeNum );
+        if(temp!=0)
+            return -1;
+        return 0;
+    }
 }
 
-int Mycamera::setTriggerMode()
+int Mycamera::setTriggerMode(int status,int id)
 {
-    int offTriggerMode=MV_CC_SetEnumValue(m_hDevhandle,"TriggerMode",MV_TRIGGER_MODE_OFF);
-    if(offTriggerMode != 0){
-        qDebug() << "设置内触发失败";
-    }else {
-        qDebug() << "成功设置内触发";
+    if(id==0)
+    {
+        if(status==0)
+        {
+            int nRet=MV_CC_SetEnumValue(m_hDevhandle,"TriggerMode",MV_TRIGGER_MODE_OFF);
+            nRet = MV_CC_SetFrameRate(m_hDevhandle,30);
+            if(nRet != 0)
+            {
+                qDebug() << "相机1设置内触发失败";
+            }
+            else
+            {
+                qDebug() << "相机1成功设置内触发";
+            }
+        }
+        else if(status==1)
+        {
+            int nRet=MV_CC_SetEnumValue(m_hDevhandle,"TriggerMode",MV_TRIGGER_MODE_ON);
+            if(nRet != 0)
+            {
+                qDebug() << "相机1设置外触发失败";
+            }
+            else
+            {
+                qDebug() << "相机1成功设置外触发";
+            }
+        }
     }
-    int nRet = MV_CC_SetFrameRate(m_hDevhandle,30);
-    if(nRet != 0){
-        qDebug() << "设置帧率失败";
-    }else {
-        qDebug() << "成功设置帧率为30";
+    else if(id==1)
+    {
+        if(status==0)
+        {
+            int nRet=MV_CC_SetEnumValue(m_hDevhandle2,"TriggerMode",MV_TRIGGER_MODE_OFF);
+            nRet = MV_CC_SetFrameRate(m_hDevhandle2,30);
+            if(nRet != 0)
+            {
+                qDebug() << "相机2设置内触发失败";
+            }
+            else
+            {
+                qDebug() << "相机2成功设置内触发";
+            }
+        }
+        else if(status==1)
+        {
+            int nRet=MV_CC_SetEnumValue(m_hDevhandle2,"TriggerMode",MV_TRIGGER_MODE_ON);
+            if(nRet != 0)
+            {
+                qDebug() << "相机2设置外触发失败";
+            }
+            else
+            {
+                qDebug() << "相机2成功设置外触发";
+            }
+        }
     }
 }
 
@@ -265,33 +320,67 @@ int Mycamera::setAcquisitionMode()
     }
 }
 
-int Mycamera::stopGrab()
+int Mycamera::stopGrab(int id)
 {
-    int temp=MV_CC_StopGrabbing(m_hDevhandle);
-    if(temp!=0)
+    if(id==0)
     {
-        qDebug()<<"停止采集失败";
-        return -1;
+        int temp=MV_CC_StopGrabbing(m_hDevhandle);
+        if(temp!=0)
+        {
+            qDebug()<<"停止采集失败";
+            return -1;
+        }
+        else
+        {
+            qDebug()<<"停止采集成功";
+            return 0;
+        }
     }
-    else
+    else if(id==1)
     {
-        qDebug()<<"停止采集成功";
-        return 0;
+        int temp=MV_CC_StopGrabbing(m_hDevhandle2);
+        if(temp!=0)
+        {
+            qDebug()<<"停止采集失败";
+            return -1;
+        }
+        else
+        {
+            qDebug()<<"停止采集成功";
+            return 0;
+        }
     }
+
 }
 
-int Mycamera::closeCamera()
+int Mycamera::closeCamera(int id)
 {
-    int nRet = MV_OK;
-    if (NULL == m_hDevhandle)
+    if(id==0)
     {
-        qDebug() << "没有句柄，不用关闭";
-        return -1;
+        int nRet = MV_OK;
+        if (NULL == m_hDevhandle)
+        {
+            qDebug() << "没有句柄，不用关闭";
+            return -1;
+        }
+        MV_CC_CloseDevice(m_hDevhandle);
+        nRet = MV_CC_DestroyHandle(m_hDevhandle);
+        m_hDevhandle = NULL;
+        return nRet;
     }
-    MV_CC_CloseDevice(m_hDevhandle);
-    nRet = MV_CC_DestroyHandle(m_hDevhandle);
-    m_hDevhandle = NULL;
-    return nRet;
+    else if(id==1)
+    {
+        int nRet = MV_OK;
+        if (NULL == m_hDevhandle2)
+        {
+            qDebug() << "没有句柄，不用关闭";
+            return -1;
+        }
+        MV_CC_CloseDevice(m_hDevhandle2);
+        nRet = MV_CC_DestroyHandle(m_hDevhandle2);
+        m_hDevhandle2 = NULL;
+        return nRet;
+    }
 }
 //回调函数定义
 void Mycamera::ImageCallBackEx(unsigned char *pData, MV_FRAME_OUT_INFO_EX *pFrameInfo, void *pUser)
@@ -301,26 +390,56 @@ void Mycamera::ImageCallBackEx(unsigned char *pData, MV_FRAME_OUT_INFO_EX *pFram
     emit mycamera1->sigSendImageStatic(image);//发射内部信号
 }
 
+void Mycamera::ImageCallBackEx2(unsigned char *pData, MV_FRAME_OUT_INFO_EX *pFrameInfo, void *pUser)
+{
+    qDebug()<<"number:"<<pFrameInfo->nFrameNum;
+     QImage image = QImage(pData, pFrameInfo->nWidth,pFrameInfo->nHeight,QImage::Format_RGB888);
+     emit mycamera1->sigSendImageStatic(image);//发射内部信号
+}
+
 void Mycamera::slotSendImageStatic(const QImage& image)
 {
     emit mycamera1->sigSendImage(image);//转发信号，发射出去信号
 }
 
-int Mycamera::callbackRegister()
+int Mycamera::callbackRegister(int id)
 {
-    int nRet = MV_CC_SetImageNodeNum(m_hDevhandle,MV_GrabStrategy_LatestImagesOnly);
-    //注册回调函数
-    nRet = MV_CC_RegisterImageCallBackForRGB(m_hDevhandle,ImageCallBackEx,m_hDevhandle);
-    return nRet;
+    if(id==0)
+    {
+        int nRet = MV_CC_SetImageNodeNum(m_hDevhandle,MV_GrabStrategy_LatestImagesOnly);
+        //注册回调函数
+        nRet = MV_CC_RegisterImageCallBackForRGB(m_hDevhandle,ImageCallBackEx,m_hDevhandle);
+        return nRet;
+    }
+    else if(id==1)
+    {
+        int nRet = MV_CC_SetImageNodeNum(m_hDevhandle2,MV_GrabStrategy_LatestImagesOnly);
+        //注册回调函数
+        nRet = MV_CC_RegisterImageCallBackForRGB(m_hDevhandle2,ImageCallBackEx2,m_hDevhandle2);
+        return nRet;
+    }
 }
 
-int Mycamera::gainAuto()
+int Mycamera::gainAuto(int id)
 {
-    int nRet = MV_CC_SetEnumValue(m_hDevhandle,"GainAuto",1);
-    if(nRet != 0){
-        qDebug() << "设置自动增益失败";
-    }else {
-        qDebug() << "成功设置自动增益";
+    if(id==0)
+    {
+        int nRet = MV_CC_SetEnumValue(m_hDevhandle,"GainAuto",1);
+        if(nRet != 0){
+            qDebug() << "相机1设置自动增益失败";
+        }else {
+            qDebug() << "相机1成功设置自动增益";
+        }
+        return nRet;
     }
-    return nRet;
+    else if(id==1)
+    {
+        int nRet = MV_CC_SetEnumValue(m_hDevhandle2,"GainAuto",1);
+        if(nRet != 0){
+            qDebug() << "相机2设置自动增益失败";
+        }else {
+            qDebug() << "相机2成功设置自动增益";
+        }
+        return nRet;
+    }
 }

@@ -7,20 +7,25 @@ Widget::Widget(QWidget *parent) :
     ui(new Ui::Widget)
 {
     ui->setupUi(this);
-    m_camera=new Mycamera;
+    //Mycamera对象
+    m_camera = new Mycamera;
+
     int nRet=m_camera->EnumDevices(&m_stDevList);
-    qDebug()<<"online number:"<<m_stDevList.nDeviceNum;
+    qDebug()<<"Online Camera:"<<m_stDevList.nDeviceNum;
     //获取相机IP地址
     for(int i=0;i<m_stDevList.nDeviceNum;i++)
     {
         unsigned char* chmn = m_stDevList.pDeviceInfo[i]->SpecialInfo.stUsb3VInfo.chModelName;
         unsigned char* chvn = m_stDevList.pDeviceInfo[i]->SpecialInfo.stUsb3VInfo.chVendorName;
         unsigned char* chguid = m_stDevList.pDeviceInfo[i]->SpecialInfo.stUsb3VInfo.chDeviceGUID;
-        unsigned char* chdfnm = m_stDevList.pDeviceInfo[i]->SpecialInfo.stUsb3VInfo.chUserDefinedName;
-        qDebug() <<chmn<<"-"<<chvn<<"-"<<chguid<<"-"<<chdfnm;
+
+        qDebug() <<QString::fromLatin1(reinterpret_cast<const char*>(chmn))<<"-"<<
+                   QString::fromLatin1(reinterpret_cast<const char*>(chvn))<<"-"<<
+                   QString::fromLatin1(reinterpret_cast<const char*>(chguid));
     }
     // 连接信号槽
     connect(m_camera,&Mycamera::sigSendImage,this,&Widget::processImage);
+    qDebug()<<"Successfully Initialized!";
 }
 
 Widget::~Widget()
@@ -73,37 +78,35 @@ QImage Widget::cvMat2QImage(const Mat &mat)
         return QImage();
     }
 }
-
+//连接相机1
 void Widget::on_pushButton_clicked()
 {
-    cameraName = (char *)m_stDevList.pDeviceInfo[0]->SpecialInfo.stUsb3VInfo.chUserDefinedName;
-    int linkCamera = m_camera->connectCamera(cameraName);
+    int linkCamera = m_camera->connectCamera(0);
     if(linkCamera == 0){
-        qDebug() << "连接相机成功";
+        qDebug() << "连接相机1成功";
     }else {
-        qDebug() << "连接相机失败";
+        qDebug() << "连接相机1失败";
     }
-
 }
-
+//关闭相机1
 void Widget::on_pushButton_2_clicked()
 {
     //关闭设备，释放资源
-    int close = m_camera->closeCamera();
+    int close = m_camera->closeCamera(0);
     if(close != 0){
-        qDebug() << "相机关闭失败";
+        qDebug() << "相机1关闭失败";
     }
     else
     {
-        qDebug()<<"关闭相机";
+        qDebug()<<"关闭相机1";
     }
 }
-
+//相机1软触发
 void Widget::on_pushButton_3_clicked()
 {
 
-    //设置相机软触发
-        int softTrigger = m_camera->softTrigger();//发送软触发
+    //设置相机1软触发
+        int softTrigger = m_camera->softTrigger(0);//发送软触发
         if(softTrigger != 0){
             qDebug() << "失败";
         }else {
@@ -124,48 +127,152 @@ void Widget::on_pushButton_3_clicked()
             m_camera->m_pBufForSaveImage = NULL; // 将指针置为NULL，避免出现悬空指针
         }
 }
-
+//相机1停止采集
 void Widget::on_pushButton_4_clicked()
 {
     //停止采集
-    int stopCamera = m_camera->stopGrab();
+    int stopCamera = m_camera->stopGrab(0);
     if(stopCamera != 0){
         qDebug() << "停止相机采集失败";
     }else {
         qDebug() << "正在停止采集";
     }
 }
-
+//相机1曝光度设置
 void Widget::on_pushButton_5_clicked()
 {
-    int setExposure = m_camera->setExposureTime(100000);
+    int setExposure = m_camera->setExposureTime(150000,0);
     if(setExposure != 0){
         qDebug() << "设置曝光度失败";
     }else {
         qDebug() << "成功设置曝光度";
     }
 }
-//内触发
+//相机1设置内触发，回调函数注册,开始连续采集
 void Widget::on_pushButton_6_clicked()
 {
-    int offTriggerMode=m_camera->setTriggerMode(0);
+    int offTriggerMode=m_camera->setTriggerMode(0,0);
     int acqMode=m_camera->setAcquisitionMode();
     //注册回调函数
-    int callBackset = m_camera->callbackRegister();
-    m_camera->startCamera();
+    int callBackset = m_camera->callbackRegister(0);
+    m_camera->startCamera(0);
 }
-
+//相机1连续采集的图像接收并显示在QLabel上
 void Widget::processImage(const QImage& image)
 {
-    QImage imagercv;
     imagercv=image;
     qDebug()<<"Information:"<<imagercv.width();
     //调整图像大小以适应QLabel
     QSize size = ui->label_image->size();
     ui->label_image->setPixmap(QPixmap::fromImage(imagercv).scaled(size, Qt::KeepAspectRatio, Qt::SmoothTransformation));
 }
-
+//相机1自动增益
 void Widget::on_pushButton_7_clicked()
 {
-    int nRet = m_camera->gainAuto();
+    int nRet = m_camera->gainAuto(0);
+}
+//保存相机1连续采集的最新一张图片
+void Widget::on_pushButton_8_clicked()
+{
+//将QImage保存
+    // 获取当前日期和时间，并将其格式化为字符串（例如：2023-07-19_134512）
+    QString timestamp = QDateTime::currentDateTime().toString("yyyy_MM_dd_hh_mm_ss");
+
+    // 构造文件名，例如 "image_2023-07-19_134512.bmp"
+    QString filename = "image_" + timestamp + ".bmp";
+
+    // 将图像保存为文件
+    if (imagercv.save(filename)) {
+        qDebug() << "保存成功：" << filename;
+    } else {
+        qDebug() << "保存失败：" << filename;
+    }
+}
+//连接相机2
+void Widget::on_pushButton_9_clicked()
+{
+    int linkCamera = m_camera->connectCamera(1);
+    if(linkCamera == 0){
+        qDebug() << "连接相机2成功";
+    }else {
+        qDebug() << "连接相机2失败";
+    }
+}
+//设置相机2软触发
+void Widget::on_pushButton_10_clicked()
+{
+    //设置相机2软触发
+        int softTrigger = m_camera->softTrigger(1);//发送软触发
+        if(softTrigger != 0){
+            qDebug() << "失败";
+        }else {
+            qDebug() << "成功触发一次";
+        }
+        int readInt = m_camera->ReadBuffer(imageMat);
+        if(readInt != 0){
+            qDebug() << "读取图像失败";
+        }
+        image = cvMat2QImage(imageMat);
+        // 调整图像大小以适应QLabel
+        QSize size = ui->label_image->size();
+        ui->label_image->setPixmap(QPixmap::fromImage(image).scaled(size, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+
+        if (m_camera->m_pBufForSaveImage != NULL)
+        {
+            free(m_camera->m_pBufForSaveImage);
+            m_camera->m_pBufForSaveImage = NULL; // 将指针置为NULL，避免出现悬空指针
+        }
+}
+//相机2曝光度设置
+void Widget::on_pushButton_15_clicked()
+{
+    int setExposure = m_camera->setExposureTime(150000,1);
+    if(setExposure != 0){
+        qDebug() << "设置曝光度失败";
+    }else {
+        qDebug() << "成功设置曝光度";
+    }
+}
+//相机2停止采集
+void Widget::on_pushButton_14_clicked()
+{
+    //停止采集
+    int stopCamera = m_camera->stopGrab(1);
+    if(stopCamera != 0){
+        qDebug() << "停止相机采集失败";
+    }else {
+        qDebug() << "正在停止采集";
+    }
+}
+//关闭相机2
+void Widget::on_pushButton_13_clicked()
+{
+    //关闭设备，释放资源
+    int close = m_camera->closeCamera(1);
+    if(close != 0){
+        qDebug() << "相机关闭失败";
+    }
+    else
+    {
+        qDebug()<<"关闭相机";
+    }
+}
+//相机2自动增益
+void Widget::on_pushButton_12_clicked()
+{
+    int nRet = m_camera->gainAuto(1);
+}
+//保存相机2连续采集的最新一张图片
+void Widget::on_pushButton_11_clicked()
+{
+
+}
+//相机2设置内触发，回调函数注册,开始连续采集
+void Widget::on_pushButton_16_clicked()
+{
+    int offTriggerMode=m_camera->setTriggerMode(0,1);
+    int acqMode=m_camera->setAcquisitionMode();
+    //注册回调函数
+    int callBackset = m_camera->callbackRegister(1);
+    m_camera->startCamera(1);
 }
