@@ -25,6 +25,7 @@ Widget::Widget(QWidget *parent) :
     }
     // 连接信号槽
     connect(m_camera,&Mycamera::sigSendImage,this,&Widget::processImage);
+    connect(m_camera,&Mycamera::sigSendImage2,this,&Widget::processImage2);
     qDebug()<<"Successfully Initialized!";
 }
 
@@ -151,20 +152,22 @@ void Widget::on_pushButton_5_clicked()
 //相机1设置内触发，回调函数注册,开始连续采集
 void Widget::on_pushButton_6_clicked()
 {
-    int offTriggerMode=m_camera->setTriggerMode(0,0);
-    int acqMode=m_camera->setAcquisitionMode();
-    //注册回调函数
-    int callBackset = m_camera->callbackRegister(0);
-    m_camera->startCamera(0);
+    GrabimgThread *gthread = new GrabimgThread(0,m_camera);
+    gthread->start();
 }
 //相机1连续采集的图像接收并显示在QLabel上
-void Widget::processImage(const QImage& image)
+void Widget::processImage(const QImage& image,int id)
 {
-    imagercv=image;
-    qDebug()<<"Information:"<<imagercv.width();
-    //调整图像大小以适应QLabel
-    QSize size = ui->label_image->size();
-    ui->label_image->setPixmap(QPixmap::fromImage(imagercv).scaled(size, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    imagercv = image;
+    Showimgthread *sthread = new Showimgthread(ui->label_image,image,0);
+    sthread->start();
+}
+
+void Widget::processImage2(const QImage &image, int id)
+{
+    imagercv2 = image;
+    Showimgthread *sthread1 = new Showimgthread(ui->label_image_2,image,1);
+    sthread1->start();
 }
 //相机1自动增益
 void Widget::on_pushButton_7_clicked()
@@ -174,14 +177,14 @@ void Widget::on_pushButton_7_clicked()
 //保存相机1连续采集的最新一张图片
 void Widget::on_pushButton_8_clicked()
 {
-//将QImage保存
-    // 获取当前日期和时间，并将其格式化为字符串（例如：2023-07-19_134512）
+    //将QImage保存
+    //获取当前日期和时间，并将其格式化为字符串（例如：2023-07-19_134512）
     QString timestamp = QDateTime::currentDateTime().toString("yyyy_MM_dd_hh_mm_ss");
 
     // 构造文件名，例如 "image_2023-07-19_134512.bmp"
     QString filename = "image_" + timestamp + ".bmp";
 
-    // 将图像保存为文件
+    //将图像保存为文件
     if (imagercv.save(filename)) {
         qDebug() << "保存成功：" << filename;
     } else {
@@ -254,7 +257,7 @@ void Widget::on_pushButton_13_clicked()
     }
     else
     {
-        qDebug()<<"关闭相机";
+        qDebug()<<"关闭相机2";
     }
 }
 //相机2自动增益
@@ -265,14 +268,28 @@ void Widget::on_pushButton_12_clicked()
 //保存相机2连续采集的最新一张图片
 void Widget::on_pushButton_11_clicked()
 {
+    //将QImage保存
+    //获取当前日期和时间，并将其格式化为字符串（例如：2023-07-19_134512）
+    QString timestamp = QDateTime::currentDateTime().toString("yyyy_MM_dd_hh_mm_ss");
 
+    // 构造文件名，例如 "image_2023-07-19_134512.bmp"
+    QString filename = "image2_" + timestamp + ".bmp";
+
+    //将图像保存为文件
+    if (imagercv2.save(filename)) {
+        qDebug() << "保存成功：" << filename;
+    } else {
+        qDebug() << "保存失败：" << filename;
+    }
 }
 //相机2设置内触发，回调函数注册,开始连续采集
 void Widget::on_pushButton_16_clicked()
 {
-    int offTriggerMode=m_camera->setTriggerMode(0,1);
-    int acqMode=m_camera->setAcquisitionMode();
-    //注册回调函数
-    int callBackset = m_camera->callbackRegister(1);
-    m_camera->startCamera(1);
+    GrabimgThread *gthread1 = new GrabimgThread(1,m_camera);
+    gthread1->start();
+}
+//拼接imagercv和imagercv1
+void Widget::on_pushButton_17_clicked()
+{
+
 }

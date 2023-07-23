@@ -9,6 +9,7 @@ Mycamera::Mycamera(QObject *parent):QObject(parent)
 {
     mycamera1=this;
     connect(this,&Mycamera::sigSendImageStatic,this,&Mycamera::slotSendImageStatic);//关联内部信号和槽
+    connect(this,&Mycamera::sigSendImageStatic2,this,&Mycamera::slotSendImageStatic2);//关联内部信号和槽
     m_hDevhandle=NULL;
     m_hDevhandle2=NULL;
 }
@@ -257,7 +258,7 @@ int Mycamera::setTriggerMode(int status,int id)
         if(status==0)
         {
             int nRet=MV_CC_SetEnumValue(m_hDevhandle,"TriggerMode",MV_TRIGGER_MODE_OFF);
-            nRet = MV_CC_SetFrameRate(m_hDevhandle,30);
+            nRet = MV_CC_SetFrameRate(m_hDevhandle,10);
             if(nRet != 0)
             {
                 qDebug() << "相机1设置内触发失败";
@@ -387,19 +388,24 @@ void Mycamera::ImageCallBackEx(unsigned char *pData, MV_FRAME_OUT_INFO_EX *pFram
 {
    qDebug()<<"number:"<<pFrameInfo->nFrameNum;
     QImage image = QImage(pData, pFrameInfo->nWidth,pFrameInfo->nHeight,QImage::Format_RGB888);
-    emit mycamera1->sigSendImageStatic(image);//发射内部信号
+    emit mycamera1->sigSendImageStatic(image,0);//发射内部信号
 }
 
 void Mycamera::ImageCallBackEx2(unsigned char *pData, MV_FRAME_OUT_INFO_EX *pFrameInfo, void *pUser)
 {
-    qDebug()<<"number:"<<pFrameInfo->nFrameNum;
+    qDebug()<<"number2:"<<pFrameInfo->nFrameNum;
      QImage image = QImage(pData, pFrameInfo->nWidth,pFrameInfo->nHeight,QImage::Format_RGB888);
-     emit mycamera1->sigSendImageStatic(image);//发射内部信号
+     emit mycamera1->sigSendImageStatic2(image,1);//发射内部信号
 }
 
-void Mycamera::slotSendImageStatic(const QImage& image)
+void Mycamera::slotSendImageStatic(const QImage& image,int id)
 {
-    emit mycamera1->sigSendImage(image);//转发信号，发射出去信号
+    emit mycamera1->sigSendImage(image,id);//转发信号，发射出去信号
+}
+
+void Mycamera::slotSendImageStatic2(const QImage &image, int id)
+{
+    emit mycamera1->sigSendImage2(image,id);//转发信号，发射出去信号
 }
 
 int Mycamera::callbackRegister(int id)

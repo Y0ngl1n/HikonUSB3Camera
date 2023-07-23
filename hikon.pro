@@ -26,11 +26,15 @@ DEFINES += QT_DEPRECATED_WARNINGS
 SOURCES += \
         main.cpp \
         widget.cpp \
-    mycamera.cpp
+    mycamera.cpp \
+    grabimgthread.cpp \
+    showimgthread.cpp
 
 HEADERS += \
         widget.h \
-    mycamera.h
+    mycamera.h \
+    grabimgthread.h \
+    showimgthread.h
 
 FORMS += \
         widget.ui

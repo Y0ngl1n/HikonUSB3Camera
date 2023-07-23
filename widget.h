@@ -5,6 +5,8 @@
 #include<QTimer>
 #include<QDateTime>
 #include"mycamera.h"
+#include"grabimgthread.h"
+#include"showimgthread.h"
 
 namespace Ui {
 class Widget;
@@ -23,6 +25,7 @@ public:
     string cameraId;
     Mat imageMat;
     QImage imagercv;
+    QImage imagercv2;
     QImage cvMat2QImage(const cv::Mat& mat);
     QImage image;
     QTimer* timer;
@@ -46,7 +49,10 @@ private slots:
 
     void on_pushButton_9_clicked();
 
-    void processImage(const QImage& image);
+    void processImage(const QImage& image,int id);
+
+    void processImage2(const QImage& image,int id);
+
     void on_pushButton_10_clicked();
 
     void on_pushButton_15_clicked();
@@ -60,6 +66,8 @@ private slots:
     void on_pushButton_11_clicked();
 
     void on_pushButton_16_clicked();
+
+    void on_pushButton_17_clicked();
 
 private:
     Ui::Widget *ui;

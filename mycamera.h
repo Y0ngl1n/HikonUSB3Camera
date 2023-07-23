@@ -53,10 +53,13 @@ public:
     unsigned char* m_pBufForDriver=NULL;//用于从驱动获取图像的缓存
     unsigned int m_nBufSizeForDriver;
 signals:
-    void sigSendImage(const QImage& image);
-    void sigSendImageStatic(const QImage& image);
+    void sigSendImage(const QImage& image,int id);
+    void sigSendImageStatic(const QImage& image,int id);
+    void sigSendImage2(const QImage& image,int id);
+    void sigSendImageStatic2(const QImage& image,int id);
 private slots:
-    void slotSendImageStatic(const QImage& image);
+    void slotSendImageStatic(const QImage& image,int id);
+    void slotSendImageStatic2(const QImage& image,int id);
 };
 
 #endif // MYCAMERA_H
