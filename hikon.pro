@@ -28,13 +28,17 @@ SOURCES += \
         widget.cpp \
     mycamera.cpp \
     grabimgthread.cpp \
-    showimgthread.cpp
+    showimgthread.cpp \
+    opencvtoqt.cpp \
+    grab2imgthread.cpp
 
 HEADERS += \
         widget.h \
     mycamera.h \
     grabimgthread.h \
-    showimgthread.h
+    showimgthread.h \
+    opencvtoqt.h \
+    grab2imgthread.h
 
 FORMS += \
         widget.ui

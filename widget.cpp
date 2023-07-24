@@ -26,6 +26,7 @@ Widget::Widget(QWidget *parent) :
     // 连接信号槽
     connect(m_camera,&Mycamera::sigSendImage,this,&Widget::processImage);
     connect(m_camera,&Mycamera::sigSendImage2,this,&Widget::processImage2);
+
     qDebug()<<"Successfully Initialized!";
 }
 
@@ -291,5 +292,7 @@ void Widget::on_pushButton_16_clicked()
 //拼接imagercv和imagercv1
 void Widget::on_pushButton_17_clicked()
 {
-
+    grab2imgthread *g2thread = new grab2imgthread(imagercv,imagercv2);
+    connect(g2thread, &grab2imgthread::finished, g2thread, &grab2imgthread::deleteLater);
+    g2thread->start();
 }

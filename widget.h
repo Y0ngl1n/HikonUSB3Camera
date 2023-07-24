@@ -7,6 +7,7 @@
 #include"mycamera.h"
 #include"grabimgthread.h"
 #include"showimgthread.h"
+#include"grab2imgthread.h"
 
 namespace Ui {
 class Widget;
@@ -26,6 +27,10 @@ public:
     Mat imageMat;
     QImage imagercv;
     QImage imagercv2;
+    Mat imagercvMat;
+    Mat imagercv2Mat;
+    Mat imageCylindrical;
+    Mat imageCylindrical2;
     QImage cvMat2QImage(const cv::Mat& mat);
     QImage image;
     QTimer* timer;

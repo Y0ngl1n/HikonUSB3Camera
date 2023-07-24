@@ -63,7 +63,7 @@ int Mycamera::connectCamera(int id)
         }
         else
         {
-            setTriggerMode(1,0);
+            setTriggerMode(0,0);
             return 0;
         }
     }
@@ -84,7 +84,7 @@ int Mycamera::connectCamera(int id)
         }
         else
         {
-            setTriggerMode(1,1);
+            setTriggerMode(0,1);
             return 0;
         }
     }
@@ -126,16 +126,17 @@ int Mycamera::startCamera(int id)
 //外触发：软触发
 int Mycamera::softTrigger(int id)
 {
+    int enumValue=setTriggerMode(1,id);
     if(id==0)
     {
-        int enumValue=MV_CC_SetEnumValue(m_hDevhandle,"TriggerMode",MV_TRIGGER_MODE_ON);
+//        int enumValue=MV_CC_SetEnumValue(m_hDevhandle,"TriggerMode",MV_TRIGGER_MODE_ON);
         enumValue=MV_CC_SetEnumValue(m_hDevhandle,"TriggerSource",MV_TRIGGER_SOURCE_SOFTWARE);
         enumValue=MV_CC_SetCommandValue(m_hDevhandle,"TriggerSoftware");
         return enumValue;
     }
     else if(id==1)
     {
-        int enumValue=MV_CC_SetEnumValue(m_hDevhandle2,"TriggerMode",MV_TRIGGER_MODE_ON);
+//        enumValue=MV_CC_SetEnumValue(m_hDevhandle2,"TriggerMode",MV_TRIGGER_MODE_ON);
         enumValue=MV_CC_SetEnumValue(m_hDevhandle2,"TriggerSource",MV_TRIGGER_SOURCE_SOFTWARE);
         enumValue=MV_CC_SetCommandValue(m_hDevhandle2,"TriggerSoftware");
         return enumValue;
